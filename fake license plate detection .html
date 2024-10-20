@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake License Plate Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 50px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px dashed #999;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            background-color: #f9f9f9;
+        }
+
+        #imagePreview {
+            margin-top: 20px;
+            display: none;
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        .result-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result {
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .result.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .result.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        #spinner {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .button:disabled {
+            background-color: #999;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Fake License Plate Detection</h1>
+        
+        <div class="upload-section" onclick="document.getElementById('imageInput').click()">
+            Click here to upload a license plate image
+        </div>
+        
+        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="previewImage(event)">
+        <img id="imagePreview" alt="License plate preview" />
+        
+        <button class="button" id="detectButton" onclick="detectLicensePlate()" disabled>Detect Fake License Plate</button>
+        
+        <div id="spinner">Detecting...</div>
+        
+        <div class="result-section" id="resultSection">
+            <div class="result" id="resultMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedImage = null;
+
+        // Function to preview uploaded image
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function () {
+                const output = document.getElementById('imagePreview');
+                output.src = reader.result;
+                output.style.display = 'block';
+                uploadedImage = event.target.files[0];  // Store the uploaded image
+                document.getElementById('detectButton').disabled = false;  // Enable detect button
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Function to detect fake license plate
+        async function detectLicensePlate() {
+            if (!uploadedImage) return;
+
+            // Disable the button and show the spinner
+            document.getElementById('detectButton').disabled = true;
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('image', uploadedImage);
+
+            try {
+                const response = await fetch('http://localhost:5000/detect', {  // Update with actual backend URL
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+
+                // Hide spinner and show result
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('resultSection').style.display = 'block';
+
+                // Display result message
+                const resultMessage = document.getElementById('resultMessage');
+                if (result.isFake) {
+                    resultMessage.innerText = "Fake license plate detected!";
+                    resultMessage.className = "result error";
+                } else {
+                    resultMessage.innerText = "License plate is real.";
+                    resultMessage.className = "result success";
+                }
+            } catch (error) {
+                console.error('Error during detection:', error);
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('resultSection').style.display = 'block';
+                const resultMessage = document.getElementById('resultMessage');
+                resultMessage.innerText = "Error detecting the license plate.";
+                resultMessage.className = "result error";
+            } finally {
+                document.getElementById('detectButton').disabled = false;  // Re-enable the button
+            }
+        }
+    </script>
+
+</body>
+</html>
